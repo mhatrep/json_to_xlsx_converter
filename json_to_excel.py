@@ -4,17 +4,6 @@ import argparse
 from pathlib import Path
 import pandas as pd
 
-#def flatten_json(y, parent_key='', sep='_', max_level=None, current_level=0):
-#    items = {}
-#    for k, v in y.items():
-#        new_key = f"{parent_key}{sep}{k}" if parent_key else k
-#        if isinstance(v, dict) and (max_level is None or current_level < max_level):
-#            items.update(flatten_json(v, new_key, sep=sep, max_level=max_level, current_level=current_level+1))
-#        else:
-#            items[new_key] = v
-#    return items
-
-
 def flatten_json(y, parent_key='', sep='_', max_level=None, current_level=1):
     items = {}
     for k, v in y.items():
