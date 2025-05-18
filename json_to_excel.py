@@ -8,14 +8,28 @@ def flatten_json(y, parent_key='', sep='_', max_level=None, current_level=1):
     items = {}
     for k, v in y.items():
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
-        if isinstance(v, dict) and (max_level is None or current_level < max_level):
-            items.update(flatten_json(v, new_key, sep=sep, max_level=max_level, current_level=current_level + 1))
-        else:
-            # If we reached max_level, keep the remaining structure as JSON string
-            if isinstance(v, dict) or isinstance(v, list):
-                items[new_key] = json.dumps(v)
+
+        if isinstance(v, dict):
+            if max_level is None or current_level < max_level:
+                items.update(flatten_json(v, new_key, sep=sep, max_level=max_level, current_level=current_level + 1))
             else:
-                items[new_key] = v
+                items[new_key] = json.dumps(v)
+
+        elif isinstance(v, list):
+            if all(isinstance(i, dict) for i in v):
+                for idx, item in enumerate(v):
+                    suffix = item.get('year', idx)
+                    if max_level is None or current_level < max_level:
+                        flattened_sub_items = flatten_json(
+                            item, f"{new_key}{sep}{suffix}", sep=sep, max_level=max_level, current_level=current_level + 1
+                        )
+                        items.update(flattened_sub_items)
+                    else:
+                        items[f"{new_key}_{suffix}"] = json.dumps(item)
+            else:
+                items[new_key] = json.dumps(v)
+        else:
+            items[new_key] = v
     return items
 
 
@@ -27,7 +41,6 @@ def process_json_file(file_path, explode_level):
             print(f"Skipping invalid JSON file: {file_path}")
             return
 
-    # Ensure data is a list of records
     if isinstance(data, dict):
         data = [data]
     elif not isinstance(data, list):
@@ -41,12 +54,13 @@ def process_json_file(file_path, explode_level):
     df.to_excel(output_file, index=False)
     print(f"Converted: {file_path} → {output_file}")
 
+
 def main():
     parser = argparse.ArgumentParser(description="Convert JSON files to XLSX with flattening options.")
     parser.add_argument(
-        '--explode-level', 
-        type=int, 
-        default=None, 
+        '--explode-level',
+        type=int,
+        default=None,
         help="Specify the explode level (0 for no flattening, higher values for deeper flattening)."
     )
     args = parser.parse_args()
@@ -60,6 +74,7 @@ def main():
 
     for json_file in json_files:
         process_json_file(json_file, args.explode_level)
+
 
 if __name__ == "__main__":
     main()
